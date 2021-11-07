@@ -8,13 +8,38 @@ import {PokemonDataView, fetchPokemon, PokemonErrorBoundary} from '../pokemon'
 // 💰 use it like this: fetchPokemon(pokemonName).then(handleSuccess, handleFailure)
 
 // 🐨 create a variable called "pokemon" (using let)
-let pokemon
-let error
-let pokemonPromise = fetchPokemon('bulbasaur').then(
-  data => (pokemon = data),
-  err => (error = err),
-)
+const createResource = promise => {
+  let status = 'pending'
+  let data
+  let error
+  let dataPromise = promise.then(
+    res => {
+      status = 'success'
+      data = res
+    },
+    err => {
+      status = 'error'
+      error = err
+    },
+  )
 
+  return {
+    read() {
+      switch (status) {
+        case 'pending':
+          throw dataPromise
+        case 'error':
+          throw error
+        case 'success':
+          return data
+        default:
+          throw new Error('createResource status value is invalid')
+      }
+    },
+  }
+}
+
+let resource = createResource(fetchPokemon('bulbasaur'))
 
 // We don't need the app to be mounted to know that we want to fetch the pokemon
 // named "pikachu" so we can go ahead and do that right here.
@@ -26,14 +51,7 @@ let pokemonPromise = fetchPokemon('bulbasaur').then(
 function PokemonInfo() {
   // 🐨 if there's no pokemon yet, then throw the pokemonPromise
   // 💰 (no, for real. Like: `throw pokemonPromise`)
-  if (error) {
-    throw error
-  }
-
-  if (!pokemon) {
-    throw pokemonPromise
-  }
-
+  const pokemon = resource.read()
   // if the code gets it this far, then the pokemon variable is defined and
   // rendering can continue!
   return (
