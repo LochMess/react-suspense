@@ -29,30 +29,44 @@ const SUSPENSE_CONFIG = {
   busyMinDurationMs: 700,
 }
 
-// 🐨 create a pokemonResourceCache object
-const pokemonResourceCache = {}
-// 🐨 create a getPokemonResource function which accepts a name checks the cache
-// for an existing resource. If there is none, then it creates a resource
-// and inserts it into the cache. Finally the function should return the
-// resource.
-function getPokemonResource(pokemonName) {
-  const lowerName = pokemonName.toLowerCase()
-  let resource = pokemonResourceCache[lowerName]
-  if (!resource) {
-    resource = createPokemonResource(lowerName)
-    pokemonResourceCache[lowerName] = resource
-  }
-  return resource
-}
-
-const CacheContext = React.createContext(getPokemonResource)
-
 function createPokemonResource(pokemonName) {
   return createResource(fetchPokemon(pokemonName))
 }
 
+const CacheContext = React.createContext()
+const usePokemonCache = () => React.useContext(CacheContext)
+
+const PokemonCacheProvider = ({cacheTime = 5000, children}) => {
+  const pokemonResourceCache = React.useRef({})
+
+  const getPokemonResource = React.useCallback(
+    pokemonName => {
+      const lowerName = pokemonName.toLowerCase()
+      let cacheEntry = pokemonResourceCache.current[lowerName]
+      
+      if (
+        cacheEntry?.expiry === undefined || Date.now() >= cacheEntry?.expiry
+      ) {
+        cacheEntry = {
+          resource: createPokemonResource(lowerName),
+          expiry: Date.now() + cacheTime,
+        }
+        pokemonResourceCache.current[lowerName] = cacheEntry
+      }
+      return pokemonResourceCache.current[lowerName]?.resource
+    },
+    [cacheTime],
+  )
+
+  return (
+    <CacheContext.Provider value={getPokemonResource}>
+      {children}
+    </CacheContext.Provider>
+  )
+}
+
 function App() {
-  const getPokemonResourceCacheContext = React.useContext(CacheContext)
+  const getPokemonResourceCacheContext = usePokemonCache()
   const [pokemonName, setPokemonName] = React.useState('')
   const [startTransition, isPending] = React.useTransition(SUSPENSE_CONFIG)
   const [pokemonResource, setPokemonResource] = React.useState(null)
@@ -100,4 +114,12 @@ function App() {
   )
 }
 
-export default App
+function AppWithProvider() {
+  return (
+    <PokemonCacheProvider cacheTime={10000}>
+      <App />
+    </PokemonCacheProvider>
+  )
+}
+
+export default AppWithProvider
