@@ -38,24 +38,36 @@ const pokemonImageCache = {}
 // 🐨 Once you have the resource, then render the <img />.
 // 💰 Here's what rendering the <img /> should look like:
 // <img src={imgSrcResource.read()} {...props} />
-const imageUrl = getImageUrlForPokemon('pikachu')
+// const imageUrl = getImageUrlForPokemon('pikachu')
 
-function ImgComponent({src, alt, ...props}) {
-  let pokemonImage = pokemonImageCache[src]
-  if (!pokemonImage) {
-    pokemonImage = createResource(preloadImage(src))
-    pokemonImageCache[src] = pokemonImage
-  }
-  return <img src={pokemonImage.read()} alt={alt} {...props} />
-}
+// function ImgComponent({src, alt, ...props}) {
+//   let pokemonImage = pokemonImageCache[src]
+//   if (!pokemonImage) {
+//     pokemonImage = createResource(preloadImage(src))
+//     pokemonImageCache[src] = pokemonImage
+//   }
+//   return <img src={pokemonImage.read()} alt={alt} {...props} />
+// }
+
+// function PokemonInfo({pokemonResource}) {
+//   const pokemon = pokemonResource.read()
+//   return (
+//     <div>
+//       <div className="pokemon-info__img-wrapper">
+//         {/* 🐨 swap this img for your new Img component */}
+//         <ImgComponent src={pokemon.image} alt={pokemon.name} />
+//       </div>
+//       <PokemonDataView pokemon={pokemon} />
+//     </div>
+//   )
+// }
 
 function PokemonInfo({pokemonResource}) {
-  const pokemon = pokemonResource.read()
+  const pokemon = pokemonResource.data.read()
   return (
     <div>
       <div className="pokemon-info__img-wrapper">
-        {/* 🐨 swap this img for your new Img component */}
-        <ImgComponent src={pokemon.image} alt={pokemon.name} />
+        <img src={pokemonResource.image.read()} alt={pokemon.name} />
       </div>
       <PokemonDataView pokemon={pokemon} />
     </div>
@@ -81,7 +93,10 @@ function getPokemonResource(name) {
 }
 
 function createPokemonResource(pokemonName) {
-  return createResource(fetchPokemon(pokemonName))
+  return {
+    data: createResource(fetchPokemon(pokemonName)),
+    image: createResource(preloadImage(getImageUrlForPokemon(pokemonName))),
+  }
 }
 
 function App() {
