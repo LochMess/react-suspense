@@ -9,6 +9,8 @@ import {
   PokemonForm,
   PokemonDataView,
   PokemonErrorBoundary,
+  // Extra credit, shows how consuming a hook can simplify the code
+  // usePokemonResource,
 } from '../pokemon'
 import {createResource, preloadImage} from '../utils'
 
@@ -24,14 +26,17 @@ function PokemonInfo({pokemonResource}) {
   )
 }
 
+// Not required in extra credit
 const SUSPENSE_CONFIG = {
   timeoutMs: 4000,
   busyDelayMs: 300,
   busyMinDurationMs: 700,
 }
 
+// Not required in extra credit
 const pokemonResourceCache = {}
 
+// Not required in extra credit
 function getPokemonResource(name) {
   const lowerName = name.toLowerCase()
   let resource = pokemonResourceCache[lowerName]
@@ -42,21 +47,18 @@ function getPokemonResource(name) {
   return resource
 }
 
+// Not required in extra credit
 function createPokemonResource(pokemonName) {
   const data = createResource(fetchPokemon(pokemonName))
   const image = createResource(preloadImage(getImageUrlForPokemon(pokemonName)))
   return {data, image}
 }
 
-function App() {
-  const [pokemonName, setPokemonName] = React.useState('')
-  // 🐨 move these two lines to a custom hook called usePokemonResource
+// Not required in extra credit
+function usePokemonResource(pokemonName) {
   const [startTransition, isPending] = React.useTransition(SUSPENSE_CONFIG)
   const [pokemonResource, setPokemonResource] = React.useState(null)
-  // 🐨 call usePokemonResource with the pokemonName.
-  //    It should return both the pokemonResource and isPending
-
-  // 🐨 move this useEffect call your custom usePokemonResource hook
+  
   React.useEffect(() => {
     if (!pokemonName) {
       setPokemonResource(null)
@@ -66,6 +68,17 @@ function App() {
       setPokemonResource(getPokemonResource(pokemonName))
     })
   }, [pokemonName, startTransition])
+
+  return [pokemonResource, isPending]
+}
+
+function App() {
+  const [pokemonName, setPokemonName] = React.useState('')
+  // 🐨 move these two lines to a custom hook called usePokemonResource
+  // 🐨 call usePokemonResource with the pokemonName.
+  //    It should return both the pokemonResource and isPending
+  const [pokemonResource, isPending] = usePokemonResource(pokemonName)
+  // 🐨 move this useEffect call your custom usePokemonResource hook
 
   function handleSubmit(newPokemonName) {
     setPokemonName(newPokemonName)
